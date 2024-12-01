@@ -114,7 +114,4 @@ ggplot(data=big_df, aes(x=Year)) +
 ```{r}
 cor.test(big_df$Knowledge_total, big_df$GDP_capita)
 ```
-```{r}
-summary(lm(big_df$Knowledge_total ~ big_df$GDP_capita))
-```
 
