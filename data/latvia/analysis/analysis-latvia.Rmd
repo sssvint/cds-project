@@ -1,0 +1,120 @@
+---
+title: "latviandata"
+author: "Samuel Vinter"
+date: "2024-11-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(readr)
+```
+
+```{r}
+eng_2000 <- read_delim("data/latvia/2000-eng-latvia.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+eng_2022 <- read_delim("data/latvia/2022-eng-latvia.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+levels_2022 <- read_delim("data/latvia/2022-eng-levels.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+gdp <- read_delim("data/latvia/GDP.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+iedzsk <- read_delim("data/latvia/iedz_sk.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r}
+yrs <- c(2000,2005,2006,2012,2022,2023)
+```
+
+```{r}
+# GDP NEEDED FOR SPECIFIC YEARS
+gdp_need <- gdp %>%
+  filter(`Laika periods` %in% yrs)
+
+gdp_need <- gdp_need %>%
+  rename(Year = `Laika periods`) %>%
+  rename(`GDP_capita` = `Uz vienu iedzīvotāju, eiro`) %>%
+  select(Year, `GDP_capita`)
+```
+
+```{r}
+iedzsk_long <- iedzsk %>%
+  select(all_of(as.character(yrs)))
+
+# TABLE OF POPULATION FOR YEARS IN YRS
+iedzsk_long <- iedzsk_long %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Year",
+    values_to = "Population"
+  )
+
+iedzsk_long$Year <- as.numeric(iedzsk_long$Year)
+```
+
+```{r}
+# effing around trying to get better data that matches up overall
+lvl2000 <- (339949*100)/2377383 # from eng_2000; percentage of iedzivotaju kopskaits who prot angļu valodu - 14.29
+
+# removing the lowest level of eng 2022 knowledge, because eurobar data specifies english on a conversational level
+# total amount of english knowers 2022 was 64% , i want to omit the 7.1 that barely speaks eng
+lvl0 <- 0.071*0.64*100 # 7.1 perc of 64 perc
+perc2022 <- 64 - lvl0 # final number 59.5 , which still kinda eh but better
+```
+
+
+```{r}
+# df of eng knowledge
+# data taken half from eurobarometer and half from stat.gov.lv, no csv given this is manual transcription baby!
+
+eng_knoweldge <- tibble(
+  Year = c(2000,2005,2006,2012,2022,2023),
+  Knowledge = c(14.29,34,39,46,59.45,54)
+)
+```
+
+```{r}
+big_df <- left_join(eng_knoweldge, iedzsk_long, by = "Year")
+big_df <- left_join(big_df, gdp_need, by = "Year")
+
+big_df <- big_df %>%
+  mutate(Knowledge_total = Population * (Knowledge/100))
+```
+
+```{r}
+# apparently R favors long data SIGH!
+
+big_df_long <- big_df %>%
+  pivot_longer(
+    cols = c(Knowledge, Population, `GDP_capita`),
+    names_to = "Variable",
+    values_to = "Value"
+  )
+```
+
+
+```{r}
+ggplot(data=big_df, aes(x=Year)) +
+#  geom_col(aes(y=Population/10000), stat="identity", fill = "blue", size = 1.4) +
+  geom_line(aes(y=GDP_capita, color="#8a6e00"), size=1.4) +
+  geom_line(aes(y=Knowledge_total/100, color="#0c61ab"), size=1.4) +
+  scale_y_continuous(name = "GDP per capita, EUR",
+                     sec.axis = sec_axis(transform = ~ . * 100, name = "Population*, count"))+
+  ggtitle("English knowledge and GDP per capita in Latvia") +
+  scale_color_manual(name = "Variables", labels=c("Population with Eng as a 2nd lang", "GDP per capita"), values = c("#0c61ab", "#8a6e00"))+
+  theme_minimal()
+```
+
+```{r}
+cor.test(big_df$Knowledge_total, big_df$GDP_capita)
+```
+```{r}
+summary(lm(big_df$Knowledge_total ~ big_df$GDP_capita))
+```
+
