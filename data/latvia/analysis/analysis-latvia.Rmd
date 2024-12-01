@@ -16,6 +16,20 @@ library(dplyr)
 library(readr)
 ```
 
+The data for this analysis was gathered from two different sources - the Eurobarometer ("Europeans and their languages") and stat.gov.lv, the official statistics portal of Latvia. The main goal was to get data pertaining to second language knowledge, specifically English as a second language - from stat.gov.lv, this sort of data could only be found for two years, 2000 and 2022. Eurobarometer had data for the years 2005, 2006, 2012 and 2023. Additionally, the GDP and population data was also gathered from stat.gov.lv.
+
+The data from stat.gov.lv could be cleaned/filtered/selected within the portal, and as such the dataframes in the relevant data folder are very "small", in that they pretty much only contain the necessary data. There was no available data in a csv or other format from the Eurobarometer, I gathered these numbers by looking at the reports, and created the dataframe manually (but also only focusing on the main parameter, knowledge of English as a second language).
+
+The data for the year 2000 was pretty straightforward - it offered population counts for total population, and for people who knew English as a second language (as well as counts for different native language speakers, but that wasn't as relevant here).
+
+In the Eurobarometer data, our main question of interest was D48.otherlang: "Which other [than your mother tongue] language, if any, do you speak well enough in order to be able to have a conversation?" - and the answer was given in percentages of the total population for each language.
+
+The data for 2022 was similar to the Eurobarometer data, as it contained a total percentage of the population that know English as a second language, as well as percentages of the respective demographic groups (areas, ages, genders, employment status etc). 
+
+Here a discrepancy arose, as the 2022 (lv gov) data showed that 64% of the population spoke English, however the 2023 (eurobar) data showed that only 54% of the people knew English - and it is very unlikely that the proficiency dropped by 10% within a year. Of course, one big reason for the drop is that these are different sources, and they had different means of data collection; additionally, both seem to be self-report type surveys, and so depending on by who, where and when they were answered, the answers could vary greatly. While these aspects are out of my control, there was one facet I could slightly manipulate; see, for 2022, there was also another dataframe, which shows the levels of mastery over (in our case) the English language. The levels range from 0-3, with 0 being "I can understand a few words or phrases" and 3 being "I have complete mastery over the language" (more or less). And considering that the Eurobarometer data only showed the percentage of people who can hold a conversation, I decided to omit level 0 from the data, to make the data be a bit more comparable. After calculating (which is also in the code below), I brought down the total percentage for 2022 to about 59%, which is still a bit too high compared to the Eurobarometer data, but better enough. 
+
+After gathering all the necessary data, I created a dataframe containing all of the relevant information and plotted the data, as well as ran a correlation and a t-test (a model seems unnecessary, as there aren't really any predictors to influence the outcome). The correlation was 0.82, which is fairly high, and the t-test showed that the null hypothesis can be rejected, as the p-value was less than 0.01. Thus, while the analysis isn't perfect, we can still surely say that there is some sort of relation between the knowledge of English as a second language and the GDP - this correlation is also supported by other studies, so it's not a huge surprise.
+
 ```{r}
 eng_2000 <- read_delim("data/latvia/2000-eng-latvia.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
@@ -85,6 +99,8 @@ big_df <- left_join(big_df, gdp_need, by = "Year")
 
 big_df <- big_df %>%
   mutate(Knowledge_total = Population * (Knowledge/100))
+
+big_df$Knowledge_total[1] <- 339949 # 2000 data
 ```
 
 ```{r}
@@ -113,5 +129,11 @@ ggplot(data=big_df, aes(x=Year)) +
 
 ```{r}
 cor.test(big_df$Knowledge_total, big_df$GDP_capita)
+# very correlated!
 ```
 
+```{r}
+# t test
+t.test(big_df$Knowledge_total, big_df$GDP_capita)
+# p < 0.01! null hypothesis rejected!
+```
