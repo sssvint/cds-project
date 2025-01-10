@@ -31,15 +31,15 @@ Here a discrepancy arose, as the 2022 (lv gov) data showed that 64% of the popul
 After gathering all the necessary data, I created a dataframe containing all of the relevant information and plotted the data, as well as ran a correlation and a t-test (a model seems unnecessary, as there aren't really any predictors to influence the outcome). The correlation was 0.82, which is fairly high, and the t-test showed that the null hypothesis can be rejected, as the p-value was less than 0.01. Thus, while the analysis isn't perfect, we can still surely say that there is some sort of relation between the knowledge of English as a second language and the GDP - this correlation is also supported by other studies, so it's not a huge surprise.
 
 ```{r}
-eng_2000 <- read_delim("data/latvia/2000-eng-latvia.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+eng_2000 <- read_delim("../2000-eng-latvia.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
-eng_2022 <- read_delim("data/latvia/2022-eng-latvia.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+eng_2022 <- read_delim("../2022-eng-latvia.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
-levels_2022 <- read_delim("data/latvia/2022-eng-levels.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+levels_2022 <- read_delim("../2022-eng-levels.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
-gdp <- read_delim("data/latvia/GDP.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+gdp <- read_delim("../GDP.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
-iedzsk <- read_delim("data/latvia/iedz_sk.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+iedzsk <- read_delim("../iedz_sk.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
 ```
 
 ```{r}
@@ -116,24 +116,22 @@ big_df_long <- big_df %>%
 
 
 ```{r}
-ggplot(data=big_df, aes(x=Year)) +
+plot<- ggplot(data=big_df, aes(x=Year)) +
 #  geom_col(aes(y=Population/10000), stat="identity", fill = "blue", size = 1.4) +
   geom_line(aes(y=GDP_capita, color="#8a6e00"), size=1.4) +
   geom_line(aes(y=Knowledge_total/100, color="#0c61ab"), size=1.4) +
   scale_y_continuous(name = "GDP per capita, EUR",
-                     sec.axis = sec_axis(transform = ~ . * 100, name = "Population*, count"))+
+                     sec.axis = sec_axis(transform = ~ . * 100, name = "Population, count"))+
   ggtitle("English knowledge and GDP per capita in Latvia") +
   scale_color_manual(name = "Variables", labels=c("Population with Eng as a 2nd lang", "GDP per capita"), values = c("#0c61ab", "#8a6e00"))+
   theme_minimal()
+
+plot
+
+ggsave("plot.png", plot, width = 10, height = 6, units = "in")
 ```
 
 ```{r}
 cor.test(big_df$Knowledge_total, big_df$GDP_capita)
 # very correlated!
-```
-
-```{r}
-# t test
-t.test(big_df$Knowledge_total, big_df$GDP_capita)
-# p < 0.01! null hypothesis rejected!
 ```
